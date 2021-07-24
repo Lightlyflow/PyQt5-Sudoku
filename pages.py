@@ -3,30 +3,48 @@ import json
 from PyQt5 import QtGui
 from PyQt5.QtCore import QUrl, Qt
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
-from PyQt5.QtWidgets import QWidget, QGridLayout, QFrame, QLabel, QVBoxLayout, QPushButton, QHBoxLayout
+from PyQt5.QtWidgets import QWidget, QGridLayout, QFrame, QLabel, QVBoxLayout, QPushButton, QHBoxLayout, QTabWidget, \
+    QSizePolicy
 
 import requester
 from requester import Difficulty
 
 
-class central(QWidget):
-    def __init__(self):
-        super(central, self).__init__()
+class SudokuApp(QWidget):
+    def __init__(self, parent=None):
+        super(SudokuApp, self).__init__(parent)
+        # vars
         self.setWindowTitle("Sudoku")
+        with open("stylesheet.txt") as f:
+            self.setStyleSheet("".join(f.readlines()))
+        # construct and add widgets
         self.construct()
 
     def construct(self):
-        with open("stylesheet.txt") as f:
-            self.setStyleSheet("".join(f.readlines()))
+        self.setLayout(QVBoxLayout())
+        tab = QTabWidget(self)
+        gamePage = Game()
+        settingsPage = Settings()
+        tab.addTab(gamePage, "Game")
+        tab.addTab(settingsPage, "Settings")
+        self.layout().addWidget(tab)
+
+
+class Game(QWidget):
+    def __init__(self, parent=None):
+        super(Game, self).__init__(parent)
+        self.construct()
+
+    def construct(self):
         self.setLayout(QHBoxLayout())
-        self.board = _board()
+        self.board = Board()
         self.btnGenBoard = QPushButton("Generate board")
         self.btnGenBoard.setObjectName("generate")
         self.btnGenBoard.clicked.connect(self.onGenBoardBtnClick)
         self.btnValidate = QPushButton("Validate")
         self.btnValidate.setObjectName("validate")
         rlayout = QVBoxLayout()
-        rlayout.setAlignment(Qt.AlignTop)
+        rlayout.setAlignment(Qt.AlignCenter)
         rlayout.addWidget(self.btnGenBoard)
         rlayout.addWidget(self.btnValidate)
         self.layout().addWidget(self.board)
@@ -37,9 +55,10 @@ class central(QWidget):
         self.board.getData(Difficulty.MEDIUM)
         self.sender().setEnabled(True)
 
-class _board(QWidget):
+
+class Board(QWidget):
     def __init__(self):
-        super(_board, self).__init__()
+        super(Board, self).__init__()
         self.setupVars()
         self.construct()
 
@@ -47,6 +66,8 @@ class _board(QWidget):
         self.btns = [[0 for _ in range(9)] for _ in range(9)]
         self.setLayout(QGridLayout())
         self.layout().setSpacing(4)
+        sp = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        # sp.setHeightForWidth(True)
         for r in range(3):
             for c in range(3):
                 frame: QFrame = QFrame()
@@ -59,8 +80,9 @@ class _board(QWidget):
                     for cc in range(3):
                         btn = QPushButton()
                         self.btns[r * 3 + rr][c * 3 + cc] = btn
-                        btn.setFixedSize(50, 50)
+                        btn.setMinimumSize(75, 75)
                         btn.setObjectName("board")
+                        btn.setSizePolicy(sp)
                         btn.clicked.connect(self.onClick)
                         frame.layout().addWidget(btn, rr, cc)
                 self.layout().addWidget(frame, r, c)
@@ -105,7 +127,7 @@ class _board(QWidget):
             print("Winner!")
 
     def keyReleaseEvent(self, event: QtGui.QKeyEvent) -> None:
-        if self.lastClicked is not None and event.text().isdigit():
+        if self.lastClicked is not None and (event.text().isdigit()):
             self.lastClicked.setText(f"{event.text()}")
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
@@ -129,3 +151,13 @@ class _board(QWidget):
             if len(set(vals[:, c])) != 9:
                 return False
         return True
+
+
+class Settings(QWidget):
+    def __init__(self, parent=None):
+        super(Settings, self).__init__(parent)
+        self.construct()
+
+    def construct(self):
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(QLabel("Settings"))
