@@ -2,7 +2,7 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
-from pages import Game, SudokuApp
+from pages import SudokuApp
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
