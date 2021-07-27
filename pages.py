@@ -1,10 +1,13 @@
 import json
+import os
+from os import listdir
+from os.path import join, isfile
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import QUrl, Qt
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PyQt5.QtWidgets import QWidget, QGridLayout, QFrame, QLabel, QVBoxLayout, QPushButton, QHBoxLayout, QTabWidget, \
-    QSizePolicy, QInputDialog
+    QSizePolicy, QInputDialog, QDialog, QScrollArea, QListWidget, QListWidgetItem
 
 import requester
 from requester import Difficulty
@@ -23,10 +26,10 @@ class SudokuApp(QWidget):
     def construct(self):
         self.setLayout(QVBoxLayout())
         tab = QTabWidget(self)
-        gamePage = Game()
-        settingsPage = Settings()
-        tab.addTab(gamePage, "Game")
-        tab.addTab(settingsPage, "Settings")
+        game_page = Game()
+        settings_page = Settings()
+        tab.addTab(game_page, "Game")
+        tab.addTab(settings_page, "Settings")
         self.layout().addWidget(tab)
 
 
@@ -48,6 +51,7 @@ class Game(QWidget):
         self.btnSaveBoard.clicked.connect(self.onSaveBoardClick)
         self.btnSaveBoard.setObjectName("rbtn")
         self.btnLoadBoard = QPushButton("Load Board")
+        self.btnLoadBoard.clicked.connect(self.onLoadBoardClick)
         self.btnLoadBoard.setObjectName("rbtn")
         rlayout = QVBoxLayout()
         rlayout.setAlignment(Qt.AlignCenter)
@@ -73,7 +77,14 @@ class Game(QWidget):
         name, ok = QInputDialog().getText(self, "Save Current Board", "Save as:")
         if ok and name:
             with open(f"Puzzles/{name}", 'w') as f:
-                f.write(str(board_state))
+                f.write(json.dumps(board_state))
+
+    def onLoadBoardClick(self):
+        # Get user to select from list
+        dg = SelectPuzzle(self)
+        if dg.exec_() == QDialog.Accepted:
+            text = dg.getSelectedText()
+            self.board.loadBoardState(text)
 
 
 class Board(QWidget):
@@ -111,7 +122,7 @@ class Board(QWidget):
     def setupVars(self):
         self.nam = QNetworkAccessManager()
         self.nam.finished.connect(self.handleResponse)
-        self.lastClicked: QPushButton = None
+        self.last_clicked: QPushButton = None
 
     def clear(self):
         """Clears the board"""
@@ -124,11 +135,24 @@ class Board(QWidget):
         """Returns the board as a 9x9 2d array with ints."""
         board_state: [[int]] = []
         for r in range(9):
-            templist = []
+            temp_list = []
             for c in range(9):
-                templist.append(self.btns[r][c].text())
-            board_state.append(templist)
+                temp_list.append(self.btns[r][c].text())
+            board_state.append(temp_list)
         return board_state
+
+    def loadBoardState(self, file_name: str):
+        try:
+            with open(f"Puzzles/{file_name}") as f:
+                board = json.loads(f.readlines()[0])
+                self.clear()
+                for r in range(9):
+                    for c in range(9):
+                        if board[r][c] != "":
+                            self.btns[r][c].setText(board[r][c])
+                            self.btns[r][c].setEnabled(False)
+        except Exception as e:
+            print(f"Error Loading Board: {e}")
 
     def getData(self, diff: Difficulty):
         """Sends a GET request to the online API. Does not handle the response."""
@@ -152,33 +176,74 @@ class Board(QWidget):
             print(reply.errorString())
 
     def onClick(self):
-        if self.lastClicked is not None:
-            self.lastClicked.setStyleSheet("")
+        if self.last_clicked is not None:
+            self.last_clicked.setStyleSheet("")
         self.sender().setStyleSheet("background-color: #cbcac8;")
-        self.lastClicked = self.sender()
+        self.last_clicked = self.sender()
 
     def keyReleaseEvent(self, key_event: QtGui.QKeyEvent) -> None:
         """Handles key presses."""
-        if self.lastClicked is not None and (key_event.text().isdigit() or key_event.key() == Qt.Key_Backspace):
+        if self.last_clicked is not None and (key_event.text().isdigit() or key_event.key() == Qt.Key_Backspace):
             if key_event.key() == Qt.Key_Backspace:
-                self.lastClicked.setText(f"")
+                self.last_clicked.setText(f"")
             else:
-                self.lastClicked.setText(f"{key_event.text()}")
+                self.last_clicked.setText(f"{key_event.text()}")
 
     def isWin(self) -> bool:
         vals = [[btn.text() for btn in row] for row in self.btns]
         # Check rows
         for r, row in enumerate(vals):
-            if len(set(row)) != 9:
+            if (len(set(row)) != 9) or ("" in row):
                 print(f"Failed row check: {r}")
                 return False
         # Check columns
         for c in range(len(vals[0])):
-            if len(set(vals[:, c])) != 9:
+            col = self.column(vals, c)
+            if (len(set(col)) != 9) or ("" in col):
                 print(f"Failed column check: {c}")
                 return False
-        # todo :: check for box uniqueness
+        for r in range(3):
+            for c in range(3):
+                temp_set = set()
+                for rr in range(3):
+                    for cc in range(3):
+                        temp_set.add(self.btns[r*3+rr][c*3+cc].text())
+                if ("" in temp_set) or (len(temp_set) != 9):
+                    print(f"Failed box check: {r=} {c=}")
+                    return False
         return True
+
+    @staticmethod
+    def column(matrix, i):
+        return [row[i] for row in matrix]
+
+
+class SelectPuzzle(QDialog):
+    def __init__(self, parent=None):
+        super(SelectPuzzle, self).__init__(parent)
+        self.construct()
+
+    def construct(self):
+        self.setModal(True)
+        self.setLayout(QVBoxLayout())
+        self.scroll_area = QScrollArea()
+        self.puzzle_list = QListWidget()
+        self.ok_btn = QPushButton("Select")
+        cur_dir = os.path.join(os.getcwd(), "Puzzles")
+        file_names = [f for f in listdir(cur_dir) if isfile(join(cur_dir, f))]
+        for name in file_names:
+            QListWidgetItem(f"{name}", self.puzzle_list)
+        self.scroll_area.setWidget(self.puzzle_list)
+        self.layout().addWidget(self.scroll_area)
+        self.layout().addWidget(self.ok_btn)
+        self.ok_btn.clicked.connect(self.onOkBtnClicked)
+
+    def onOkBtnClicked(self):
+        if len(self.puzzle_list.selectedItems()) == 1:
+            self.accept()
+
+    def getSelectedText(self) -> str:
+        return self.puzzle_list.selectedItems()[0].text()
 
 
 class Settings(QWidget):
