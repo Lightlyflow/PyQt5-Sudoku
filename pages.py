@@ -122,7 +122,7 @@ class Board(QWidget):
     def setupVars(self):
         self.nam = QNetworkAccessManager()
         self.nam.finished.connect(self.handleResponse)
-        self.last_clicked: QPushButton = None
+        self.last_clicked: QPushButton = QPushButton()
 
     def clear(self):
         """Clears the board"""
@@ -225,6 +225,8 @@ class SelectPuzzle(QDialog):
 
     def construct(self):
         self.setModal(True)
+        self.setWindowFlag(Qt.FramelessWindowHint)
+        self.setObjectName("selectPuzzle")
         self.setLayout(QVBoxLayout())
         self.scroll_area = QScrollArea()
         self.puzzle_list = QListWidget()

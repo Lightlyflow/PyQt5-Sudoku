@@ -31,3 +31,7 @@ QTabBar::tab {
     font-style: bold;
     min-width: 100px;
 }
+
+#selectPuzzle {
+    border: 2px solid black;
+}
