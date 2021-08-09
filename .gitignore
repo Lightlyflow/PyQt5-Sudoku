@@ -1,8 +1,10 @@
+# Include:
+!Puzzles/Example
+
 # Exclude:
 /venv/
 /.idea/
 /Puzzles/
+/build/
 temp.txt
-
-# Include:
-!Puzzles/Example
+main.spec
