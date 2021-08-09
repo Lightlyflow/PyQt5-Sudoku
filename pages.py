@@ -18,6 +18,7 @@ class SudokuApp(QWidget):
         super(SudokuApp, self).__init__(parent)
         # vars
         self.setWindowTitle("Sudoku")
+        self.setWindowIcon(QtGui.QIcon("res/icon.png"))
         with open("stylesheet.txt") as f:
             self.setStyleSheet("".join(f.readlines()))
         # construct and add widgets
