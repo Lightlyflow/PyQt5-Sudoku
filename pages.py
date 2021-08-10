@@ -4,12 +4,13 @@ from os import listdir
 from os.path import join, isfile
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import QUrl, Qt
+from PyQt5.QtCore import QUrl, Qt, QTimer, pyqtSlot
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PyQt5.QtWidgets import QWidget, QGridLayout, QFrame, QLabel, QVBoxLayout, QPushButton, QHBoxLayout, QTabWidget, \
     QSizePolicy, QInputDialog, QDialog, QScrollArea, QListWidget, QListWidgetItem
 
 import requester
+from OtherWidgets import StopwatchWidget
 from requester import Difficulty
 
 
@@ -42,6 +43,7 @@ class Game(QWidget):
     def construct(self):
         self.setLayout(QHBoxLayout())
         self.board = Board()
+        self.stopwatch = StopwatchWidget()
         self.btnGenBoard = QPushButton("Generate board")
         self.btnGenBoard.setObjectName("rbtn")
         self.btnGenBoard.clicked.connect(self.onGenBoardBtnClick)
@@ -56,6 +58,7 @@ class Game(QWidget):
         self.btnLoadBoard.setObjectName("rbtn")
         rlayout = QVBoxLayout()
         rlayout.setAlignment(Qt.AlignCenter)
+        rlayout.addWidget(self.stopwatch)
         rlayout.addWidget(self.btnGenBoard)
         rlayout.addWidget(self.btnValidate)
         rlayout.addWidget(self.btnSaveBoard)
@@ -63,16 +66,21 @@ class Game(QWidget):
         self.layout().addWidget(self.board)
         self.layout().addLayout(rlayout)
 
+    @pyqtSlot()
     def onValidateClick(self):
         print(f"Checking...")
         if self.board.isWin():
+            self.stopwatch.stop()
             print(f"Complete!")
 
+    @pyqtSlot()
     def onGenBoardBtnClick(self):
         self.sender().setEnabled(False)
         self.board.getData(Difficulty.MEDIUM)
+        self.stopwatch.start()
         self.sender().setEnabled(True)
 
+    @pyqtSlot()
     def onSaveBoardClick(self):
         board_state = self.board.getBoardState()
         name, ok = QInputDialog().getText(self, "Save Current Board", "Save as:")
@@ -80,9 +88,10 @@ class Game(QWidget):
             with open(f"Puzzles/{name}", 'w') as f:
                 f.write(json.dumps(board_state))
 
+    @pyqtSlot()
     def onLoadBoardClick(self):
         # Get user to select from list
-        dg = SelectPuzzle(self)
+        dg = PuzzleSelector(self)
         if dg.exec_() == QDialog.Accepted:
             text = dg.getSelectedText()
             self.board.loadBoardState(text)
@@ -160,7 +169,8 @@ class Board(QWidget):
         req = QNetworkRequest(QUrl(requester.getUrl(diff)))
         self.nam.get(req)
 
-    def handleResponse(self,  reply):
+    @pyqtSlot(QNetworkReply)
+    def handleResponse(self,  reply: QNetworkReply):
         """Processes the response from the API."""
         er = reply.error()
         if er == QNetworkReply.NoError:
@@ -176,12 +186,14 @@ class Board(QWidget):
             print("Error occurred: ", er)
             print(reply.errorString())
 
+    @pyqtSlot()
     def onClick(self):
         if self.last_clicked is not None:
             self.last_clicked.setStyleSheet("")
         self.sender().setStyleSheet("background-color: #cbcac8;")
         self.last_clicked = self.sender()
 
+    @pyqtSlot(QtGui.QKeyEvent)
     def keyReleaseEvent(self, key_event: QtGui.QKeyEvent) -> None:
         """Handles key presses."""
         if self.last_clicked is not None and (key_event.text().isdigit() or key_event.key() == Qt.Key_Backspace):
@@ -219,9 +231,9 @@ class Board(QWidget):
         return [row[i] for row in matrix]
 
 
-class SelectPuzzle(QDialog):
+class PuzzleSelector(QDialog):
     def __init__(self, parent=None):
-        super(SelectPuzzle, self).__init__(parent)
+        super(PuzzleSelector, self).__init__(parent)
         self.construct()
 
     def construct(self):
@@ -241,6 +253,7 @@ class SelectPuzzle(QDialog):
         self.layout().addWidget(self.ok_btn)
         self.ok_btn.clicked.connect(self.onOkBtnClicked)
 
+    @pyqtSlot()
     def onOkBtnClicked(self):
         if len(self.puzzle_list.selectedItems()) == 1:
             self.accept()
