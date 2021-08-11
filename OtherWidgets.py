@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QTimer, QTime, QObject, pyqtSignal, Q_ENUMS, pyqtSlot
+from PyQt5.QtCore import QTimer, QTime, QObject, pyqtSignal, Q_ENUMS, pyqtSlot, Qt
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
 
 
@@ -78,8 +78,10 @@ class StopwatchWidget(QWidget):
         self.setLayout(QVBoxLayout())
         self.stopwatch_object = StopwatchObject(self)
         self.label = QLabel("0:00")
+        self.label.setObjectName("stopwatch")
         self.stopwatch_object.secondChanged.connect(self.updateText)
         self.stopwatch_object.minuteChanged.connect(self.updateText)
+        self.layout().setAlignment(Qt.AlignCenter)
         self.layout().addWidget(self.label)
 
     def start(self):
