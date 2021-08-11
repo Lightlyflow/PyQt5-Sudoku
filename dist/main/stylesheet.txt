@@ -1,0 +1,42 @@
+* {
+    font-size: 20px;
+}
+
+QPushButton#board {
+    background-color: #ffffff;
+    border: 2px;
+    border-radius: 8px;
+    font-size: 24px;
+}
+QPushButton#board:disabled{
+    background-color: #e1e1e1;
+    font-style: bold;
+}
+
+QPushButton#rbtn {
+    background-color: #aeadac;
+    border-radius: 6px;
+    border: 2px solid black;
+    font-size: 20px;
+    width: 200px;
+}
+
+QTabWidget::pane {
+    background-color: pale gray;
+    border: 0px solid black;
+}
+
+QTabBar::tab {
+    font-size: 14px;
+    font-style: bold;
+    min-width: 100px;
+}
+
+#selectPuzzle {
+    border: 2px solid black;
+}
+
+#stopwatch {
+    border: 1px solid black;
+    border-radius: 6px;
+}
