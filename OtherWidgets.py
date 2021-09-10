@@ -15,6 +15,7 @@ class StopwatchObject(QObject, State):
 
     secondChanged = pyqtSignal(int)
     minuteChanged = pyqtSignal(int)
+    hourChanged = pyqtSignal(int)
     stateChanged = pyqtSignal(State)
 
     def __init__(self, parent=None):
@@ -30,6 +31,12 @@ class StopwatchObject(QObject, State):
     def setCurrentState(self, state):
         self._current_state = state
         self.stateChanged.emit(state)
+
+    def setTime(self, h: int, m: int, s: int):
+        self.hours = h
+        self.minutes = m
+        self.seconds = s
+        self.start()
 
     @pyqtSlot()
     def start(self):
@@ -62,7 +69,7 @@ class StopwatchObject(QObject, State):
     @pyqtSlot()
     def on_timeout(self):
         t = QTime.fromMSecsSinceStartOfDay(self._delta + self._time.elapsed())
-        s, m = t.second(), t.minute()
+        s, m, h = t.second(), t.minute(), t.hour()
         if self.seconds != s:
             self.seconds = s
             self.secondChanged.emit(s)
@@ -70,6 +77,10 @@ class StopwatchObject(QObject, State):
         if self.minutes != m:
             self.minutes = m
             self.minuteChanged.emit(m)
+
+        if self.hours != h:
+            self.hours = h
+            self.hourChanged.emit(h)
 
 
 class StopwatchWidget(QWidget):
@@ -81,6 +92,7 @@ class StopwatchWidget(QWidget):
         self.label.setObjectName("stopwatch")
         self.stopwatch_object.secondChanged.connect(self.updateText)
         self.stopwatch_object.minuteChanged.connect(self.updateText)
+        self.stopwatch_object.hourChanged.connect(self.updateText)
         self.layout().setAlignment(Qt.AlignCenter)
         self.layout().addWidget(self.label)
 
@@ -96,9 +108,16 @@ class StopwatchWidget(QWidget):
     def resume(self):
         self.stopwatch_object.resume()
 
-    # todo :: add a reset function
+    def reset(self):
+        self.stopwatch_object.setTime(0, 0, 0)
+
+    def setTime(self, h: int, m: int, s: int):
+        self.stopwatch_object.setTime(h, m, s)
+
+    def getTime(self) -> str:
+        return f"{self.stopwatch_object.hours}:{self.stopwatch_object.minutes}:{self.stopwatch_object.seconds}"
 
     @pyqtSlot()
     def updateText(self):
-        text = "{:d}:{:02d}".format(self.stopwatch_object.minutes, self.stopwatch_object.seconds)
+        text = "{:d}:{:d}:{:02d}".format(self.stopwatch_object.hours, self.stopwatch_object.minutes, self.stopwatch_object.seconds)
         self.label.setText(text)
