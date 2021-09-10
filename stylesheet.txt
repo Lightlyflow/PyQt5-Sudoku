@@ -36,6 +36,10 @@ QTabBar::tab {
     border: 2px solid black;
 }
 
+#diffSelector {
+    border: 2px solid black;
+}
+
 #stopwatch {
     border: 1px solid black;
     border-radius: 6px;

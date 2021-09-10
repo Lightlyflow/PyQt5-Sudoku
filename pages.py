@@ -52,6 +52,8 @@ class Game(QWidget):
         self.btnSaveBoard.setObjectName("rbtn")
         self.btnLoadBoard = QPushButton("Load Board")
         self.btnLoadBoard.setObjectName("rbtn")
+        # Other widgets
+        self.diffSelector = DifficultySelector(self)
         # adding functionality
         self.btnGenBoard.clicked.connect(self.onGenBoardBtnClick)
         self.btnValidate.clicked.connect(self.onValidateClick)
@@ -78,7 +80,8 @@ class Game(QWidget):
     @pyqtSlot()
     def onGenBoardBtnClick(self):
         self.sender().setEnabled(False)
-        self.board.getData(Difficulty.MEDIUM)
+        if self.diffSelector.exec_() == QDialog.Accepted:
+            self.board.getData(self.diffSelector.getDifficultySelected())
         self.sender().setEnabled(True)
 
     @pyqtSlot()
@@ -173,7 +176,7 @@ class Board(QWidget):
         self.nam.get(req)
 
     @pyqtSlot(QNetworkReply)
-    def handleResponse(self,  reply: QNetworkReply):
+    def handleResponse(self, reply: QNetworkReply):
         """Processes the response from the API."""
         er = reply.error()
         if er == QNetworkReply.NoError:
@@ -224,7 +227,7 @@ class Board(QWidget):
                 temp_set = set()
                 for rr in range(3):
                     for cc in range(3):
-                        temp_set.add(self.btns[r*3+rr][c*3+cc].text())
+                        temp_set.add(self.btns[r * 3 + rr][c * 3 + cc].text())
                 if ("" in temp_set) or (len(temp_set) != 9):
                     print(f"Failed box check: {r=} {c=}")
                     return False
@@ -264,6 +267,48 @@ class PuzzleSelector(QDialog):
 
     def getSelectedText(self) -> str:
         return self.puzzle_list.selectedItems()[0].text()
+
+
+class DifficultySelector(QDialog):
+    def __init__(self, parent=None):
+        super(DifficultySelector, self).__init__(parent)
+        self.initUI()
+
+    def initUI(self):
+        self.setModal(True)
+        self.setWindowFlag(Qt.FramelessWindowHint)
+        self.setObjectName("diffSelector")
+        # widget stuff
+        self.setLayout(QVBoxLayout())
+        self.list_diffs = QListWidget()
+        self.bottom_layout = QHBoxLayout()
+        self.diffEasy = QListWidgetItem("Easy", self.list_diffs)
+        self.diffMedium = QListWidgetItem("Medium", self.list_diffs)
+        self.diffHard = QListWidgetItem("Hard", self.list_diffs)
+        self.diffRandom = QListWidgetItem("Random", self.list_diffs)
+        self.btn_cancel = QPushButton("Cancel")
+        self.btn_ok = QPushButton("Ok")
+        self.bot_container = QWidget()
+        self.bottom_layout.addWidget(self.btn_cancel)
+        self.bottom_layout.addWidget(self.btn_ok)
+        self.bot_container.setLayout(self.bottom_layout)
+        self.layout().addWidget(self.list_diffs)
+        self.layout().addWidget(self.bot_container)
+        # Adding func
+        self.btn_cancel.clicked.connect(self.onBtnCancel)
+        self.btn_ok.clicked.connect(self.onBtnOk)
+
+    def onBtnCancel(self):
+        self.reject()
+
+    def onBtnOk(self):
+        self.accept()
+
+    def getDifficultySelected(self):
+        return {"Easy": Difficulty.EASY,
+                "Medium": Difficulty.MEDIUM,
+                "Hard": Difficulty.HARD,
+                "Random": Difficulty.RANDOM}.get(self.list_diffs.selectedItems()[0].text())
 
 
 class Settings(QWidget):
