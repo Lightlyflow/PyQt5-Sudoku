@@ -4,7 +4,7 @@ from os import listdir
 from os.path import join, isfile
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import QUrl, Qt, QTimer, pyqtSlot
+from PyQt5.QtCore import QUrl, Qt, QTimer, pyqtSlot, pyqtSignal
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PyQt5.QtWidgets import QWidget, QGridLayout, QFrame, QLabel, QVBoxLayout, QPushButton, QHBoxLayout, QTabWidget, \
     QSizePolicy, QInputDialog, QDialog, QScrollArea, QListWidget, QListWidgetItem
@@ -46,16 +46,18 @@ class Game(QWidget):
         self.stopwatch = StopwatchWidget()
         self.btnGenBoard = QPushButton("Generate board")
         self.btnGenBoard.setObjectName("rbtn")
-        self.btnGenBoard.clicked.connect(self.onGenBoardBtnClick)
         self.btnValidate = QPushButton("Validate")
         self.btnValidate.setObjectName("rbtn")
-        self.btnValidate.clicked.connect(self.onValidateClick)
         self.btnSaveBoard = QPushButton("Save Board As Puzzle")
-        self.btnSaveBoard.clicked.connect(self.onSaveBoardClick)
         self.btnSaveBoard.setObjectName("rbtn")
         self.btnLoadBoard = QPushButton("Load Board")
-        self.btnLoadBoard.clicked.connect(self.onLoadBoardClick)
         self.btnLoadBoard.setObjectName("rbtn")
+        # adding functionality
+        self.btnGenBoard.clicked.connect(self.onGenBoardBtnClick)
+        self.btnValidate.clicked.connect(self.onValidateClick)
+        self.btnSaveBoard.clicked.connect(self.onSaveBoardClick)
+        self.btnLoadBoard.clicked.connect(self.onLoadBoardClick)
+        self.board.data_received.connect(lambda: self.stopwatch.start())
         rlayout = QVBoxLayout()
         rlayout.setAlignment(Qt.AlignCenter)
         rlayout.addWidget(self.stopwatch)
@@ -77,7 +79,6 @@ class Game(QWidget):
     def onGenBoardBtnClick(self):
         self.sender().setEnabled(False)
         self.board.getData(Difficulty.MEDIUM)
-        self.stopwatch.start()
         self.sender().setEnabled(True)
 
     @pyqtSlot()
@@ -98,6 +99,8 @@ class Game(QWidget):
 
 
 class Board(QWidget):
+    data_received = pyqtSignal()
+
     def __init__(self):
         super(Board, self).__init__()
         self.setupVars()
@@ -182,6 +185,7 @@ class Board(QWidget):
                     if val != 0:
                         self.btns[r][c].setText(f"{val}")
                         self.btns[r][c].setEnabled(False)
+            self.data_received.emit()
         else:
             print("Error occurred: ", er)
             print(reply.errorString())
