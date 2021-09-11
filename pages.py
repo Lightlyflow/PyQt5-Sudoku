@@ -60,15 +60,15 @@ class Game(QWidget):
         self.btnSaveBoard.clicked.connect(self.onSaveBoardClick)
         self.btnLoadBoard.clicked.connect(self.onLoadBoardClick)
         self.board.data_received.connect(lambda: self.stopwatch.start())
-        rlayout = QVBoxLayout()
-        rlayout.setAlignment(Qt.AlignCenter)
-        rlayout.addWidget(self.stopwatch)
-        rlayout.addWidget(self.btnGenBoard)
-        rlayout.addWidget(self.btnValidate)
-        rlayout.addWidget(self.btnSaveBoard)
-        rlayout.addWidget(self.btnLoadBoard)
+        right_layout = QVBoxLayout()
+        right_layout.setAlignment(Qt.AlignCenter)
+        right_layout.addWidget(self.stopwatch)
+        right_layout.addWidget(self.btnGenBoard)
+        right_layout.addWidget(self.btnValidate)
+        right_layout.addWidget(self.btnSaveBoard)
+        right_layout.addWidget(self.btnLoadBoard)
         self.layout().addWidget(self.board)
-        self.layout().addLayout(rlayout)
+        self.layout().addLayout(right_layout)
 
     @pyqtSlot()
     def onValidateClick(self):
@@ -110,7 +110,7 @@ class Board(QWidget):
         self.construct()
 
     def construct(self):
-        self.btns: [[QPushButton]] = [[QPushButton() for _ in range(9)] for _ in range(9)]
+        self.buttons: [[QPushButton]] = [[QPushButton() for _ in range(9)] for _ in range(9)]
         self.setLayout(QGridLayout())
         self.layout().setSpacing(4)
         sp = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
@@ -126,7 +126,7 @@ class Board(QWidget):
                 for rr in range(3):
                     for cc in range(3):
                         btn = QPushButton()
-                        self.btns[r * 3 + rr][c * 3 + cc] = btn
+                        self.buttons[r * 3 + rr][c * 3 + cc] = btn
                         btn.setMinimumSize(75, 75)
                         btn.setObjectName("board")
                         btn.setSizePolicy(sp)
@@ -142,7 +142,7 @@ class Board(QWidget):
 
     def clear(self):
         """Clears the board"""
-        for row in self.btns:
+        for row in self.buttons:
             for btn in row:
                 btn.setText("")
                 btn.setEnabled(True)
@@ -153,7 +153,7 @@ class Board(QWidget):
         for r in range(9):
             temp_list = []
             for c in range(9):
-                temp_list.append(self.btns[r][c].text())
+                temp_list.append(self.buttons[r][c].text())
             board_state.append(temp_list)
         return board_state
 
@@ -165,8 +165,8 @@ class Board(QWidget):
                 for r in range(9):
                     for c in range(9):
                         if board[r][c] != "":
-                            self.btns[r][c].setText(board[r][c])
-                            self.btns[r][c].setEnabled(False)
+                            self.buttons[r][c].setText(board[r][c])
+                            self.buttons[r][c].setEnabled(False)
         except Exception as e:
             print(f"Error Loading Board: {e}")
 
@@ -186,8 +186,8 @@ class Board(QWidget):
             for r, row in enumerate(board):
                 for c, val in enumerate(row):
                     if val != 0:
-                        self.btns[r][c].setText(f"{val}")
-                        self.btns[r][c].setEnabled(False)
+                        self.buttons[r][c].setText(f"{val}")
+                        self.buttons[r][c].setEnabled(False)
             self.data_received.emit()
         else:
             print("Error occurred: ", er)
@@ -210,15 +210,15 @@ class Board(QWidget):
                 self.last_clicked.setText(f"{key_event.text()}")
 
     def isWin(self) -> bool:
-        vals = [[btn.text() for btn in row] for row in self.btns]
+        values = [[btn.text() for btn in row] for row in self.buttons]
         # Check rows
-        for r, row in enumerate(vals):
+        for r, row in enumerate(values):
             if (len(set(row)) != 9) or ("" in row):
                 print(f"Failed row check: {r}")
                 return False
         # Check columns
-        for c in range(len(vals[0])):
-            col = self.column(vals, c)
+        for c in range(len(values[0])):
+            col = self.column(values, c)
             if (len(set(col)) != 9) or ("" in col):
                 print(f"Failed column check: {c}")
                 return False
@@ -227,7 +227,7 @@ class Board(QWidget):
                 temp_set = set()
                 for rr in range(3):
                     for cc in range(3):
-                        temp_set.add(self.btns[r * 3 + rr][c * 3 + cc].text())
+                        temp_set.add(self.buttons[r * 3 + rr][c * 3 + cc].text())
                 if ("" in temp_set) or (len(temp_set) != 9):
                     print(f"Failed box check: {r=} {c=}")
                     return False
