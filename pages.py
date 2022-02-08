@@ -4,7 +4,7 @@ from os import listdir
 from os.path import join, isfile
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import QUrl, Qt, QTimer, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import QUrl, Qt, pyqtSlot, pyqtSignal
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PyQt5.QtWidgets import QWidget, QGridLayout, QFrame, QLabel, QVBoxLayout, QPushButton, QHBoxLayout, QTabWidget, \
     QSizePolicy, QInputDialog, QDialog, QScrollArea, QListWidget, QListWidgetItem
@@ -12,6 +12,10 @@ from PyQt5.QtWidgets import QWidget, QGridLayout, QFrame, QLabel, QVBoxLayout, Q
 import requester
 from OtherWidgets import StopwatchWidget
 from requester import Difficulty
+from savesManager import SavesManager
+
+
+savesManager = SavesManager()
 
 
 class SudokuApp(QWidget):
@@ -81,24 +85,31 @@ class Game(QWidget):
     def onGenBoardBtnClick(self):
         self.sender().setEnabled(False)
         if self.diffSelector.exec_() == QDialog.Accepted:
-            self.board.getData(self.diffSelector.getDifficultySelected())
+            self.board.getBoardData(self.diffSelector.getDifficultySelected())
         self.sender().setEnabled(True)
 
     @pyqtSlot()
     def onSaveBoardClick(self):
-        board_state = self.board.getBoardState()
         name, ok = QInputDialog().getText(self, "Save Current Board", "Save as:")
         if ok and name:
-            with open(f"Puzzles/{name}", 'w') as f:
-                f.write(json.dumps(board_state))
+            savesManager.data['time'] = self.stopwatch.getTime()
+            savesManager.data['board'] = self.board.getBoardState()
+            savesManager.data['frozen'] = self.board.getStaticBoard()
+            print(f"{savesManager.data['frozen'] = }")
+            savesManager.save(name)
 
     @pyqtSlot()
     def onLoadBoardClick(self):
+        # todo :: load time
         # Get user to select from list
         dg = PuzzleSelector(self)
         if dg.exec_() == QDialog.Accepted:
-            text = dg.getSelectedText()
-            self.board.loadBoardState(text)
+            fileName = dg.getSelectedText()
+            savesManager.load(fileName)
+            self.board.loadBoardState(fileName)
+            # fixme :: Load time
+            h, m, s = list(map(int, savesManager.data['time'].split(":")))
+            self.stopwatch.setTime(h, m, s)
 
 
 class Board(QWidget):
@@ -110,7 +121,10 @@ class Board(QWidget):
         self.construct()
 
     def construct(self):
+        # Data
         self.buttons: [[QPushButton]] = [[QPushButton() for _ in range(9)] for _ in range(9)]
+        self.static_board = None
+        # GUI vars
         self.setLayout(QGridLayout())
         self.layout().setSpacing(4)
         sp = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
@@ -141,15 +155,15 @@ class Board(QWidget):
         self.last_clicked: QPushButton = QPushButton()
 
     def clear(self):
-        """Clears the board"""
+        """Clears the board visually and enables all buttons."""
         for row in self.buttons:
             for btn in row:
                 btn.setText("")
                 btn.setEnabled(True)
 
-    def getBoardState(self) -> [[int]]:
+    def getBoardState(self) -> [[str]]:
         """Returns the board as a 9x9 2d array with ints."""
-        board_state: [[int]] = []
+        board_state = []
         for r in range(9):
             temp_list = []
             for c in range(9):
@@ -157,23 +171,39 @@ class Board(QWidget):
             board_state.append(temp_list)
         return board_state
 
-    def loadBoardState(self, file_name: str):
-        try:
-            with open(f"Puzzles/{file_name}") as f:
-                board = json.loads(f.readlines()[0])
-                self.clear()
-                for r in range(9):
-                    for c in range(9):
-                        if board[r][c] != "":
-                            self.buttons[r][c].setText(board[r][c])
-                            self.buttons[r][c].setEnabled(False)
-        except Exception as e:
-            print(f"Error Loading Board: {e}")
+    def getStaticBoard(self) -> [[str]]:
+        frozen = []
+        for r in range(9):
+            tmp_row = []
+            for c in range(9):
+                if not self.buttons[r][c].isEnabled():
+                    tmp_row.append(self.buttons[r][c].text())
+                else:
+                    tmp_row.append("")
+            frozen.append(tmp_row)
+        return frozen
 
-    def getData(self, diff: Difficulty):
+    def loadBoardState(self, file_name: str):
+        """Loads the board state visually."""
+        try:
+            self.clear()
+            # load frozen board
+            for r, row in enumerate(savesManager.data['frozen']):
+                for c, val in enumerate(row):
+                    if val != "":
+                        self.buttons[r][c].setText(val)
+                        self.buttons[r][c].setEnabled(False)
+            # load editable board
+            for r, row in enumerate(savesManager.data['board']):
+                for c, val in enumerate(row):
+                    self.buttons[r][c].setText(val)
+        except Exception as e:
+            print(f"Error Loading Board: \n{e}")
+
+    def getBoardData(self, diff: Difficulty):
         """Sends a GET request to the online API. Does not handle the response."""
-        req = QNetworkRequest(QUrl(requester.getUrl(diff)))
-        self.nam.get(req)
+        reqBoard = QNetworkRequest(QUrl(requester.getUrl(diff)))
+        self.nam.get(reqBoard)
 
     @pyqtSlot(QNetworkReply)
     def handleResponse(self, reply: QNetworkReply):
@@ -182,6 +212,7 @@ class Board(QWidget):
         if er == QNetworkReply.NoError:
             bytes_string = reply.readAll()
             board = json.loads(str(bytes_string, 'utf-8'))["board"]
+            self.static_board = eval(json.dumps(board))
             self.clear()
             for r, row in enumerate(board):
                 for c, val in enumerate(row):
