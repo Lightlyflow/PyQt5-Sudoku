@@ -2,7 +2,7 @@ import pprint
 import os
 
 
-PATH = "Puzzles/"
+PATH = "../Puzzles/"
 REQUIRED_FIELDS = [("fileName", "example"),
                    ("time", 0),
                    ("board", [["" for _ in range(9)] for _ in range(9)]),
@@ -15,7 +15,7 @@ class SavesManager:
         self.data = {}
         self._setMissingReqs()
 
-    def load(self, fileName: str) -> None:
+    def load_data(self, fileName: str) -> None:
         """Loads all data from the file [name]."""
         try:
             with open(f"{PATH + fileName}") as f:

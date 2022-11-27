@@ -6,7 +6,7 @@
 /.idea/
 /Puzzles/
 /build/
+/dist/
 /__pycache__/
 temp.txt
 test.py
-main.spec

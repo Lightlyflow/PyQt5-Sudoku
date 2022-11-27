@@ -7,6 +7,7 @@ class State:
     STOPPED = 0
     PAUSE = 1
     RUNNING = 2
+    SETTING = 3
 
 
 class StopwatchObject(QObject, State):
@@ -36,7 +37,7 @@ class StopwatchObject(QObject, State):
         self.hours = h
         self.minutes = m
         self.seconds = s
-        self.start()
+        self.resume()
 
     @pyqtSlot()
     def start(self):
