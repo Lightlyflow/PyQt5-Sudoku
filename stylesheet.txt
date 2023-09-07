@@ -8,6 +8,7 @@ QPushButton#board {
     border-radius: 8px;
     font-size: 24px;
 }
+
 QPushButton#board:disabled{
     background-color: #e1e1e1;
     font-style: bold;
