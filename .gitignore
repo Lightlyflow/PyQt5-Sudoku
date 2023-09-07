@@ -10,3 +10,4 @@
 /__pycache__/
 temp.txt
 test.py
+*/__pycache__
