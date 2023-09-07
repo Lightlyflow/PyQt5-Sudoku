@@ -17,8 +17,8 @@ class PuzzleSelector(QDialog):
         self.scroll_area = QScrollArea()
         self.puzzle_list = QListWidget()
         self.ok_btn = QPushButton("Select")
-        cur_dir = path.join(getcwd(), "../Puzzles")
-        file_names = [f for f in listdir(cur_dir) if path.isfile(path.join(cur_dir, f))]
+        puzzle_dir = path.join(getcwd(), "Puzzles")
+        file_names = [f for f in listdir(puzzle_dir) if path.isfile(path.join(puzzle_dir, f))]
         for name in file_names:
             QListWidgetItem(f"{name}", self.puzzle_list)
         self.scroll_area.setWidget(self.puzzle_list)

@@ -1,7 +1,7 @@
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTabWidget
 
-from page.pages import Game, Settings
+from page import gamePage, settingsPage
 
 
 class SudokuApp(QWidget):
@@ -18,8 +18,8 @@ class SudokuApp(QWidget):
     def construct(self):
         self.setLayout(QVBoxLayout())
         tab = QTabWidget(self)
-        game_page = Game()
-        settings_page = Settings()
+        game_page = gamePage()
+        settings_page = settingsPage()
         tab.addTab(game_page, "Game")
         tab.addTab(settings_page, "Settings")
         self.layout().addWidget(tab)

@@ -1,8 +1,8 @@
 import pprint
-import os
+from os import path, getcwd, remove
 
 
-PATH = "../Puzzles/"
+PATH = path.join(getcwd(), "Puzzles")
 REQUIRED_FIELDS = [("fileName", "example"),
                    ("time", 0),
                    ("board", [["" for _ in range(9)] for _ in range(9)]),
@@ -18,7 +18,7 @@ class SavesManager:
     def load_data(self, fileName: str) -> None:
         """Loads all data from the file [name]."""
         try:
-            with open(f"{PATH + fileName}") as f:
+            with open(path.join(PATH, fileName)) as f:
                 self.__init__()
                 for line in f.readlines():
                     key, val = line.strip().split(": ")
@@ -45,7 +45,7 @@ class SavesManager:
     @staticmethod
     def delete(fileName: str):
         try:
-            os.remove(PATH + fileName)
+            remove(PATH + fileName)
             print(f"Removed {fileName}.")
         except Exception as e:
             print(f"Error removing file: \n{e}")

@@ -1,4 +1,6 @@
 from page import game, settings
+from .game import Game
+from .settings import Settings
 
-gamePage = game
-settingsPage = settings
+gamePage = Game
+settingsPage = Settings
